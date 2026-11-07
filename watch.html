@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Video review</title>
+<style>
+  :root { --bg: #f4f4f2; --fg: #1d1d1b; --muted: #6b6b66; --panel: #ffffff; --line: #e2e2dd; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #141413; --fg: #f1f1ee; --muted: #a3a39d; --panel: #1f1f1d; --line: #33332f; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; gap: 14px; }
+  header { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 2px; }
+  h1 { font-size: 17px; font-weight: 600; margin: 0; }
+  .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .frame { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+  .frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .msg { max-width: 380px; text-align: center; color: var(--muted); }
+  .links { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; font-size: 13px; }
+  .links a { color: var(--fg); }
+</style>
+</head>
+<body>
+  <header>
+    <h1 id="who">TikTok video</h1>
+    <div class="meta" id="meta"></div>
+  </header>
+  <div class="frame" id="frame" hidden></div>
+  <p class="msg" id="msg" hidden>This link is missing a valid video ID.</p>
+  <div class="links"><a id="close" href="#" onclick="window.close(); return false;">Close tab</a></div>
+<script>
+  // Usage: watch.html?v=<TikTok video id>&n=<creator name (optional)>
+  const q = new URLSearchParams(location.search);
+  const id = (q.get('v') || '').trim();
+  const name = (q.get('n') || '').slice(0, 80);
+  if (name) document.getElementById('who').textContent = name;
+  if (/^[0-9]{10,25}$/.test(id)) {
+    document.getElementById('meta').textContent = 'Video ' + id;
+    const f = document.createElement('iframe');
+    // TikTok's official embedded player: plays without signing in
+    f.src = 'https://www.tiktok.com/player/v1/' + id + '?controls=1&progress_bar=1&play_button=1&volume_control=1&fullscreen_button=1&timestamp=1&music_info=1&description=1&rel=0&native_context_menu=0&closed_caption=1';
+    f.allow = 'autoplay; fullscreen; encrypted-media; picture-in-picture';
+    f.allowFullscreen = true;
+    f.title = 'TikTok video ' + id;
+    const box = document.getElementById('frame');
+    box.appendChild(f);
+    box.hidden = false;
+  } else {
+    document.getElementById('msg').hidden = false;
+  }
+</script>
+</body>
+</html>
