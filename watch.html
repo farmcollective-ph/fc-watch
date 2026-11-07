@@ -6,18 +6,19 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Video review</title>
 <style>
-  :root { --bg: #f4f4f2; --fg: #1d1d1b; --muted: #6b6b66; --panel: #ffffff; --line: #e2e2dd; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #141413; --fg: #f1f1ee; --muted: #a3a39d; --panel: #1f1f1d; --line: #33332f; } }
+  :root { --bg: #f4f4f2; --fg: #1d1d1b; --muted: #6b6b66; --line: #e2e2dd; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #141413; --fg: #f1f1ee; --muted: #a3a39d; --line: #33332f; } }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; gap: 14px; }
   header { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 2px; }
   h1 { font-size: 17px; font-weight: 600; margin: 0; }
   .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-  .frame { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
-  .frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+  #player { width: 100%; max-width: 380px; display: flex; justify-content: center; }
+  #player blockquote.tiktok-embed { margin: 0 !important; }
+  .v1 { width: 100%; aspect-ratio: 9 / 16; border: 0; border-radius: 12px; background: #000; display: block; }
   .msg { max-width: 380px; text-align: center; color: var(--muted); }
-  .links { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; font-size: 13px; }
-  .links a { color: var(--fg); }
+  .links { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 13px; }
+  .links a, .links button { color: var(--fg); background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -25,26 +26,55 @@
     <h1 id="who">TikTok video</h1>
     <div class="meta" id="meta"></div>
   </header>
-  <div class="frame" id="frame" hidden></div>
+  <div id="player"></div>
   <p class="msg" id="msg" hidden>This link is missing a valid video ID.</p>
-  <div class="links"><a id="close" href="#" onclick="window.close(); return false;">Close tab</a></div>
+  <div class="links" id="links" hidden>
+    <button type="button" id="swap">Try the other player</button>
+    <a href="#" onclick="window.close(); return false;">Close tab</a>
+  </div>
 <script>
-  // Usage: watch.html?v=<TikTok video id>&n=<creator name (optional)>
+  // Usage: watch.html?v=<TikTok video id>&n=<creator name (optional)>&p=v1 (optional: alternate player)
   const q = new URLSearchParams(location.search);
   const id = (q.get('v') || '').trim();
   const name = (q.get('n') || '').slice(0, 80);
   if (name) document.getElementById('who').textContent = name;
+  const box = document.getElementById('player');
+
+  function standard() {
+    // TikTok's standard embed (blockquote + embed.js), the one blogs and news sites use
+    box.replaceChildren();
+    const bq = document.createElement('blockquote');
+    bq.className = 'tiktok-embed';
+    bq.setAttribute('cite', 'https://www.tiktok.com/@tiktok/video/' + id);
+    bq.setAttribute('data-video-id', id);
+    bq.style.maxWidth = '380px';
+    bq.style.minWidth = '300px';
+    bq.appendChild(document.createElement('section'));
+    box.appendChild(bq);
+    const s = document.createElement('script');
+    s.src = 'https://www.tiktok.com/embed.js';
+    s.async = true;
+    document.body.appendChild(s);
+  }
+  function v1() {
+    // TikTok's newer embedded player
+    box.replaceChildren();
+    const f = document.createElement('iframe');
+    f.className = 'v1';
+    f.src = 'https://www.tiktok.com/player/v1/' + id + '?controls=1&progress_bar=1&play_button=1&volume_control=1&fullscreen_button=1&timestamp=1&music_info=1&description=1&rel=0';
+    f.allow = 'autoplay; fullscreen; encrypted-media; picture-in-picture';
+    f.title = 'TikTok video ' + id;
+    box.appendChild(f);
+  }
+
   if (/^[0-9]{10,25}$/.test(id)) {
     document.getElementById('meta').textContent = 'Video ' + id;
-    const f = document.createElement('iframe');
-    // TikTok's official embedded player: plays without signing in
-    f.src = 'https://www.tiktok.com/player/v1/' + id + '?controls=1&progress_bar=1&play_button=1&volume_control=1&fullscreen_button=1&timestamp=1&music_info=1&description=1&rel=0&native_context_menu=0&closed_caption=1';
-    f.allow = 'autoplay; fullscreen; encrypted-media; picture-in-picture';
-    f.allowFullscreen = true;
-    f.title = 'TikTok video ' + id;
-    const box = document.getElementById('frame');
-    box.appendChild(f);
-    box.hidden = false;
+    document.getElementById('links').hidden = false;
+    let mode = q.get('p') === 'v1' ? 'v1' : 'standard';
+    const swap = document.getElementById('swap');
+    const show = () => { (mode === 'v1' ? v1 : standard)(); swap.textContent = mode === 'v1' ? 'Use the standard player' : 'Try the other player'; };
+    swap.addEventListener('click', () => { mode = mode === 'v1' ? 'standard' : 'v1'; show(); });
+    show();
   } else {
     document.getElementById('msg').hidden = false;
   }
